@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { db, cartItems, products } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { cookies } from "next/headers";
 
 export async function POST(_req: NextRequest) {
+  const stripe = getStripe();
+  if (!stripeEnabled || !stripe) {
+    return NextResponse.json({ disabled: true }, { status: 503 });
+  }
+
   const session = await getSession();
   const cookieStore = await cookies();
   const sessionId = cookieStore.get("ter_cart_session")?.value;
@@ -15,10 +20,7 @@ export async function POST(_req: NextRequest) {
     : eq(cartItems.sessionId, sessionId!);
 
   const items = await db
-    .select({
-      quantity: cartItems.quantity,
-      product: products,
-    })
+    .select({ quantity: cartItems.quantity, product: products })
     .from(cartItems)
     .leftJoin(products, eq(cartItems.productId, products.id))
     .where(whereClause);

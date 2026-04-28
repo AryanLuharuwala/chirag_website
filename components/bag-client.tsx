@@ -2,7 +2,8 @@
 
 import { useCart } from "./cart-context";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
+const STRIPE_ENABLED = Boolean(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 
 const COLOR_MAP: Record<string, string> = {
   white: "var(--c-white)",
@@ -14,13 +15,13 @@ const COLOR_MAP: Record<string, string> = {
 export default function BagClient() {
   const { items, count, total, removeItem, updateQty } = useCart();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const shipping = total >= 150 ? 0 : 12;
   const tax = total * 0.08;
   const orderTotal = total + shipping + tax;
 
   const handleCheckout = async () => {
+    if (!STRIPE_ENABLED) return;
     setLoading(true);
     try {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
@@ -261,24 +262,57 @@ export default function BagClient() {
               ${orderTotal.toFixed(2)}
             </span>
           </div>
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            style={{
-              width: "100%",
-              height: 54,
-              background: "var(--ink)",
-              color: "var(--cream)",
-              border: "none",
-              fontFamily: "var(--mono)",
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              cursor: loading ? "wait" : "pointer",
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {loading ? "REDIRECTING..." : "CHECKOUT →"}
-          </button>
+          {STRIPE_ENABLED ? (
+            <button
+              onClick={handleCheckout}
+              disabled={loading}
+              style={{
+                width: "100%",
+                height: 54,
+                background: "var(--ink)",
+                color: "var(--cream)",
+                border: "none",
+                fontFamily: "var(--mono)",
+                fontSize: 11,
+                letterSpacing: "0.2em",
+                cursor: loading ? "wait" : "pointer",
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? "REDIRECTING..." : "CHECKOUT →"}
+            </button>
+          ) : (
+            <div>
+              <div style={{
+                width: "100%",
+                height: 54,
+                background: "var(--cream-2)",
+                border: "1px solid var(--line)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                color: "var(--muted)",
+              }}>
+                CHECKOUT UNAVAILABLE
+              </div>
+              <div className="mono" style={{
+                fontSize: 9,
+                color: "var(--muted)",
+                textAlign: "center",
+                marginTop: 10,
+                letterSpacing: "0.12em",
+                lineHeight: 1.5,
+              }}>
+                Payments not configured yet.{" "}
+                <a href="/admin/settings" style={{ color: "var(--ink)", textDecoration: "underline" }}>
+                  Add Stripe key in admin →
+                </a>
+              </div>
+            </div>
+          )}
           <div className="mono" style={{
             fontSize: 9.5,
             color: "var(--muted)",

@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Standalone output for Docker / Azure Web App
-  output: "standalone",
-
-  // Allow the design-placeholder color values to pass through
+  // "standalone" is only for Docker/Azure — remove for Vercel
   experimental: {
     serverActions: { allowedOrigins: ["localhost:3000"] },
   },

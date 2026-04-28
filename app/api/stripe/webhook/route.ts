@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { db, orders, cartItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 export async function POST(req: NextRequest) {
+  const stripe = getStripe();
+  if (!stripeEnabled || !stripe) {
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
+  }
+
   const body = await req.text();
   const sig = req.headers.get("stripe-signature")!;
 

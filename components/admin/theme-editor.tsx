@@ -147,6 +147,54 @@ export default function AdminThemeEditor() {
           padding: "24px 20px",
           flexShrink: 0,
         }}>
+          <Section>PAYMENTS</Section>
+
+          {/* Stripe status indicator */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 14,
+            padding: "10px 12px",
+            background: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+              ? "rgba(168,196,168,0.15)"
+              : "rgba(193,112,96,0.15)",
+            border: `1px solid ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "rgba(168,196,168,0.3)" : "rgba(193,112,96,0.3)"}`,
+          }}>
+            <div style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "#A8C4A8" : "#C17060",
+              flexShrink: 0,
+            }} />
+            <span style={{ fontFamily: "var(--mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--cream)" }}>
+              STRIPE {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "CONNECTED" : "NOT CONFIGURED"}
+            </span>
+          </div>
+
+          <FieldLabel>HOW TO ENABLE PAYMENTS</FieldLabel>
+          <div style={{
+            fontFamily: "var(--sans)",
+            fontSize: 12,
+            color: "var(--muted)",
+            lineHeight: 1.6,
+            marginBottom: 16,
+            padding: "10px 12px",
+            background: "rgba(244,239,230,0.04)",
+            border: "1px solid rgba(244,239,230,0.1)",
+          }}>
+            Add these to your environment variables (Vercel dashboard → Settings → Environment Variables):
+            <br /><br />
+            <code style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--cream)", letterSpacing: "0.06em" }}>
+              STRIPE_SECRET_KEY=sk_live_...
+              <br />
+              STRIPE_WEBHOOK_SECRET=whsec_...
+              <br />
+              NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+            </code>
+            <br /><br />
+            Then redeploy. The checkout button will activate automatically.
+          </div>
+
           <Section>SITE INFO</Section>
 
           <FieldLabel>SITE NAME</FieldLabel>
