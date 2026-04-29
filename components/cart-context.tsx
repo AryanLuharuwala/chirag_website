@@ -22,6 +22,9 @@ type CartCtx = {
   count: number;
   total: number;
   loading: boolean;
+  drawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
   addItem: (productId: string, size: string, colorKey: string, qty?: number) => Promise<void>;
   removeItem: (id: string) => Promise<void>;
   updateQty: (id: string, qty: number) => Promise<void>;
@@ -33,6 +36,9 @@ const CartContext = createContext<CartCtx | null>(null);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
 
   const refresh = useCallback(async () => {
     try {
@@ -51,6 +57,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId, size, colorKey, quantity: qty }),
     });
+    setDrawerOpen(true);
     refresh();
   };
 
@@ -76,7 +83,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const total = items.reduce((s, i) => s + parseFloat(i.product.price) * i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, count, total, loading, addItem, removeItem, updateQty, refresh }}>
+    <CartContext.Provider value={{ items, count, total, loading, drawerOpen, openDrawer, closeDrawer, addItem, removeItem, updateQty, refresh }}>
       {children}
     </CartContext.Provider>
   );

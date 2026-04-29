@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "./cart-context";
 import type { ProductImage } from "@/lib/db/schema";
 
@@ -92,21 +93,23 @@ export default function ProductCard({ product, big = false, scrollRoot }: Props)
           }} />
           {/* hero image, or faint silhouette fallback */}
           {product.images?.[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={product.images[0].url}
-              alt={product.images[0].label ?? product.name}
-              style={{
-                position: "absolute",
-                left: `${50 + (product.images[0].offsetX ?? 0)}%`,
-                top: `${50 + (product.images[0].offsetY ?? 0)}%`,
-                transform: `translate(-50%, -50%) scale(${product.images[0].scale ?? 1})`,
-                maxWidth: "92%",
-                maxHeight: "92%",
-                objectFit: "contain",
-                pointerEvents: "none",
-              }}
-            />
+            <div style={{
+              position: "absolute",
+              left: `${50 + (product.images[0].offsetX ?? 0)}%`,
+              top: `${50 + (product.images[0].offsetY ?? 0)}%`,
+              transform: `translate(-50%, -50%) scale(${product.images[0].scale ?? 1})`,
+              width: "92%",
+              height: "92%",
+              pointerEvents: "none",
+            }}>
+              <Image
+                src={product.images[0].url}
+                alt={product.images[0].label ?? product.name}
+                fill
+                sizes={big ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 33vw, 50vw"}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
           ) : (
             <div style={{
               position: "absolute",

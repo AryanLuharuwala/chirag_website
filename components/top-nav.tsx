@@ -13,7 +13,7 @@ const LINKS = [
 
 export default function TopNav() {
   const pathname = usePathname();
-  const { count } = useCart();
+  const { count, openDrawer } = useCart();
 
   return (
     <nav style={{
@@ -58,18 +58,25 @@ export default function TopNav() {
             </Link>
           );
         })}
-        <Link href="/bag" style={{
-          textDecoration: "none",
-          fontFamily: "var(--mono)",
-          fontSize: 10,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: pathname === "/bag" ? "var(--ink)" : "var(--muted)",
-          borderBottom: pathname === "/bag" ? "1px solid var(--ink)" : "1px solid transparent",
-          paddingBottom: 2,
-        }}>
+        <button
+          onClick={openDrawer}
+          aria-label={`Open bag, ${count} items`}
+          style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: pathname === "/bag" ? "var(--ink)" : "var(--muted)",
+            borderBottom: pathname === "/bag" ? "1px solid var(--ink)" : "1px solid transparent",
+            paddingBottom: 2,
+          }}
+        >
           Bag {count > 0 && `(${count})`}
-        </Link>
+        </button>
         <Link href="/account" style={{
           textDecoration: "none",
           fontFamily: "var(--mono)",

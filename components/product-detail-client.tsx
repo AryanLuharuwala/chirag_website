@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useCart } from "./cart-context";
 import type { ProductImage } from "@/lib/db/schema";
 
@@ -71,21 +72,24 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
               background: "radial-gradient(140% 90% at 30% 20%, rgba(255,255,255,0.4), transparent 60%)",
             }} />
             {main ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={main.url}
-                alt={main.label ?? product.name}
-                style={{
-                  position: "absolute",
-                  left: `${50 + (main.offsetX ?? 0)}%`,
-                  top: `${50 + (main.offsetY ?? 0)}%`,
-                  transform: `translate(-50%, -50%) scale(${main.scale ?? 1})`,
-                  maxWidth: "92%",
-                  maxHeight: "92%",
-                  objectFit: "contain",
-                  pointerEvents: "none",
-                }}
-              />
+              <div style={{
+                position: "absolute",
+                left: `${50 + (main.offsetX ?? 0)}%`,
+                top: `${50 + (main.offsetY ?? 0)}%`,
+                transform: `translate(-50%, -50%) scale(${main.scale ?? 1})`,
+                width: "92%",
+                height: "92%",
+                pointerEvents: "none",
+              }}>
+                <Image
+                  src={main.url}
+                  alt={main.label ?? product.name}
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 60vw, 100vw"
+                  style={{ objectFit: "contain" }}
+                />
+              </div>
             ) : (
               <div className="ph-label" style={{
                 background: "rgba(0,0,0,0.4)",
@@ -130,20 +134,22 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
                       position: "absolute", inset: 0,
                       background: "radial-gradient(140% 90% at 30% 20%, rgba(255,255,255,0.4), transparent 60%)",
                     }} />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={alt.url}
-                      alt={alt.label ?? ""}
-                      style={{
-                        position: "absolute",
-                        left: `${50 + (alt.offsetX ?? 0)}%`,
-                        top: `${50 + (alt.offsetY ?? 0)}%`,
-                        transform: `translate(-50%, -50%) scale(${alt.scale ?? 1})`,
-                        maxWidth: "92%",
-                        maxHeight: "92%",
-                        objectFit: "contain",
-                      }}
-                    />
+                    <div style={{
+                      position: "absolute",
+                      left: `${50 + (alt.offsetX ?? 0)}%`,
+                      top: `${50 + (alt.offsetY ?? 0)}%`,
+                      transform: `translate(-50%, -50%) scale(${alt.scale ?? 1})`,
+                      width: "92%",
+                      height: "92%",
+                    }}>
+                      <Image
+                        src={alt.url}
+                        alt={alt.label ?? ""}
+                        fill
+                        sizes="(min-width: 1024px) 20vw, 33vw"
+                        style={{ objectFit: "contain" }}
+                      />
+                    </div>
                     {alt.label && (
                       <div className="ph-label" style={{
                         background: "rgba(0,0,0,0.45)",
