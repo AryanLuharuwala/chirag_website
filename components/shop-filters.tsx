@@ -11,7 +11,7 @@ function Filters({ active, activeColor }: { active: string; activeColor: string 
   const color = searchParams.get("color") ?? "all";
 
   return (
-    <div style={{
+    <div className="scroll-x" style={{
       position: "sticky",
       top: 57,
       zIndex: 40,
@@ -22,6 +22,7 @@ function Filters({ active, activeColor }: { active: string; activeColor: string 
       background: "rgba(244,239,230,0.9)",
       backdropFilter: "blur(10px)",
       WebkitBackdropFilter: "blur(10px)",
+      whiteSpace: "nowrap",
     }}>
       {CATS.map((cat) => (
         <Link key={cat} href={`/shop?cat=${cat}${color !== "all" ? `&color=${color}` : ""}`} style={{

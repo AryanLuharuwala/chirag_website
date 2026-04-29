@@ -26,13 +26,11 @@ export default async function Home() {
       <IntroMarquee products={allProducts} />
 
       {/* Shop teaser */}
-      <section style={{ padding: "80px 36px", background: "var(--cream)" }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          marginBottom: 48,
-        }}>
+      <section style={{
+        padding: "var(--section-y-lg) var(--section-x)",
+        background: "var(--cream)",
+      }}>
+        <div className="section-header-row" style={{ marginBottom: 48 }}>
           <div>
             <div className="mono" style={{
               fontSize: 10,
@@ -67,11 +65,7 @@ export default async function Home() {
           </Link>
         </div>
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 16,
-        }}>
+        <div className="products-grid">
           {featured.map((p, i) => (
             <ProductCard key={p.id} product={p} big={i === 0 || i === 5} />
           ))}

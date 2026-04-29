@@ -35,7 +35,7 @@ export default function BagClient() {
   if (items.length === 0) {
     return (
       <section style={{
-        padding: "80px 36px",
+        padding: "var(--section-y-lg) var(--section-x)",
         background: "var(--cream)",
         minHeight: "60vh",
         display: "flex",
@@ -79,18 +79,13 @@ export default function BagClient() {
 
   return (
     <section style={{
-      padding: "64px 36px",
+      padding: "var(--section-y-md) var(--section-x)",
       background: "var(--cream)",
       borderTop: "1px solid var(--line)",
     }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        marginBottom: 36,
-      }}>
+      <div className="section-header-row" style={{ marginBottom: 36 }}>
         <h1 className="serif" style={{
-          fontSize: 56,
+          fontSize: "clamp(40px, 6vw, 56px)",
           margin: 0,
           color: "var(--ink)",
           letterSpacing: "-0.02em",
@@ -107,11 +102,11 @@ export default function BagClient() {
         </span>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 40 }}>
+      <div className="bag-grid">
         {/* Line items */}
         <div>
           {items.map((item) => (
-            <div key={item.id} style={{
+            <div key={item.id} className="bag-line" style={{
               display: "grid",
               gridTemplateColumns: "120px 1fr auto",
               gap: 24,
@@ -119,7 +114,7 @@ export default function BagClient() {
               borderTop: "1px solid var(--line)",
               alignItems: "center",
             }}>
-              <div style={{
+              <div className="bag-line-thumb" style={{
                 width: 120,
                 height: 150,
                 background: COLOR_MAP[item.colorKey] ?? "var(--cream-2)",

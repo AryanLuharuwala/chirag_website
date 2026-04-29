@@ -12,7 +12,7 @@ export default function SiteFooter() {
     <footer style={{
       background: "var(--cream-2)",
       color: "var(--ink)",
-      padding: "80px 36px 28px",
+      padding: "var(--section-y-lg) var(--section-x) 28px",
       borderTop: "1px solid var(--line)",
     }}>
       <div className="serif" style={{
@@ -24,10 +24,7 @@ export default function SiteFooter() {
         Wear it<br /><em style={{ fontWeight: 400 }}>out.</em>
       </div>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: 24,
+      <div className="footer-grid" style={{
         marginTop: 64,
         paddingTop: 28,
         borderTop: "1px solid var(--line)",
@@ -62,6 +59,8 @@ export default function SiteFooter() {
         marginTop: 48,
         display: "flex",
         justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 12,
         fontFamily: "var(--mono)",
         fontSize: 9.5,
         color: "var(--muted)",

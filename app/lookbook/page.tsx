@@ -6,13 +6,14 @@ export default function LookbookPage() {
   return (
     <>
       <TopNav />
-      <section style={{ background: "var(--ink)", color: "var(--cream)", padding: "80px 0" }}>
+      <section style={{
+        background: "var(--ink)",
+        color: "var(--cream)",
+        padding: "var(--section-y-lg) 0",
+      }}>
         {/* Hero */}
-        <div style={{
-          padding: "0 36px 56px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
+        <div className="section-header-row" style={{
+          padding: "0 var(--section-x) var(--section-gap)",
         }}>
           <div>
             <div className="mono" style={{
@@ -35,19 +36,18 @@ export default function LookbookPage() {
               <em style={{ fontWeight: 400 }}>in cotton.</em>
             </h1>
           </div>
-          <p className="serif" style={{
+          <p className="serif lookbook-intro" style={{
             maxWidth: 320,
             fontSize: 16,
             lineHeight: 1.5,
             color: "var(--muted)",
-            textAlign: "right",
           }}>
             Photographed in Cádiz at the end of June. Worn by the people who live there, in the rooms they live in.
           </p>
         </div>
 
         {/* 2-up image grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+        <div className="lookbook-grid-2">
           <div className="ph" style={{
             background: "var(--c-red)",
             height: 520,
@@ -70,11 +70,8 @@ export default function LookbookPage() {
         </div>
 
         {/* Three-column block */}
-        <div style={{
-          padding: "64px 36px",
-          display: "grid",
-          gridTemplateColumns: "1.2fr 1fr 1.2fr",
-          gap: 36,
+        <div className="lookbook-grid-3" style={{
+          padding: "var(--section-y-md) var(--section-x)",
           alignItems: "flex-end",
         }}>
           <div className="ph" style={{ background: "var(--c-sage)", height: 360 }}>
@@ -109,11 +106,12 @@ export default function LookbookPage() {
 
         {/* Chapter footer */}
         <div style={{
-          padding: "0 36px",
+          padding: "28px var(--section-x) 0",
           display: "flex",
           justifyContent: "space-between",
+          gap: 16,
           borderTop: "1px solid rgba(244,239,230,0.14)",
-          paddingTop: 28,
+          flexWrap: "wrap",
         }}>
           <span className="mono" style={{
             fontSize: 10,

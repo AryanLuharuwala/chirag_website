@@ -44,7 +44,7 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
   return (
     <section style={{
       background: "var(--paper)",
-      padding: "64px 36px",
+      padding: "var(--section-y-md) var(--section-x)",
       borderTop: "1px solid var(--line)",
     }}>
       <div className="mono" style={{
@@ -56,7 +56,7 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
         SHOP · {product.category.toUpperCase()} · {product.name.toUpperCase()}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 48 }}>
+      <div className="detail-grid">
         {/* Image stack */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div className="ph" style={{
@@ -179,7 +179,7 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
         {/* Meta — sticky */}
         <div style={{ position: "sticky", top: 80, alignSelf: "start" }}>
           <h1 className="serif" style={{
-            fontSize: 56,
+            fontSize: "clamp(36px, 6vw, 56px)",
             lineHeight: 0.95,
             letterSpacing: "-0.025em",
             margin: 0,

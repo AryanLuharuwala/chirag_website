@@ -35,13 +35,11 @@ export default async function ShopPage({ searchParams }: Props) {
   return (
     <>
       <TopNav />
-      <section style={{ padding: "64px 36px 80px", background: "var(--cream)" }}>
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          marginBottom: 40,
-        }}>
+      <section style={{
+        padding: "var(--section-y-md) var(--section-x) var(--section-y-lg)",
+        background: "var(--cream)",
+      }}>
+        <div className="section-header-row" style={{ marginBottom: 40 }}>
           <div>
             <div className="mono" style={{
               fontSize: 10,
@@ -85,12 +83,7 @@ export default async function ShopPage({ searchParams }: Props) {
         {/* Sticky filter bar */}
         <ShopFilters active={cat ?? "All"} activeColor={color ?? "all"} />
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 16,
-          marginTop: 24,
-        }}>
+        <div className="products-grid" style={{ marginTop: 24 }}>
           {filtered.map((p, i) => (
             <ProductCard key={p.id} product={p} big={i === 0 || i === 5} />
           ))}
