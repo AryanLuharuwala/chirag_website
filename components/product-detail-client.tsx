@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useCart } from "./cart-context";
-import type { Product } from "./product-card";
+import type { ProductImage } from "@/lib/db/schema";
 
 const COLOR_MAP: Record<string, string> = {
   white: "var(--c-white)",
@@ -22,9 +22,13 @@ type DBProduct = {
   colorKey: "white" | "sky" | "red" | "sage";
   tone: string;
   description: string;
+  images?: ProductImage[];
 };
 
 export default function ProductDetailClient({ product }: { product: DBProduct }) {
+  const images = Array.isArray(product.images) ? product.images : [];
+  const [activeIdx, setActiveIdx] = useState(0);
+  const main: ProductImage | undefined = images[activeIdx] ?? images[0];
   const [selectedSize, setSize] = useState("M");
   const [selectedColor, setColor] = useState<string>(product.colorKey);
   const [added, setAdded] = useState(false);
@@ -59,28 +63,108 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
             height: "auto",
             background: COLOR_MAP[product.colorKey],
             color: "rgba(255,255,255,0.9)",
+            position: "relative",
+            overflow: "hidden",
           }}>
             <div style={{
               position: "absolute", inset: 0,
               background: "radial-gradient(140% 90% at 30% 20%, rgba(255,255,255,0.4), transparent 60%)",
             }} />
-            <div className="ph-label" style={{
-              background: "rgba(0,0,0,0.4)",
-              color: "rgba(255,255,255,0.95)",
-            }}>
-              HERO · ON FIGURE · 4:5
-            </div>
+            {main ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={main.url}
+                alt={main.label ?? product.name}
+                style={{
+                  position: "absolute",
+                  left: `${50 + (main.offsetX ?? 0)}%`,
+                  top: `${50 + (main.offsetY ?? 0)}%`,
+                  transform: `translate(-50%, -50%) scale(${main.scale ?? 1})`,
+                  maxWidth: "92%",
+                  maxHeight: "92%",
+                  objectFit: "contain",
+                  pointerEvents: "none",
+                }}
+              />
+            ) : (
+              <div className="ph-label" style={{
+                background: "rgba(0,0,0,0.4)",
+                color: "rgba(255,255,255,0.95)",
+              }}>
+                HERO · ON FIGURE · 4:5
+              </div>
+            )}
+            {main?.label && (
+              <div className="ph-label" style={{
+                background: "rgba(0,0,0,0.4)",
+                color: "rgba(255,255,255,0.95)",
+              }}>
+                {main.label.toUpperCase()}
+              </div>
+            )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-            {["DETAIL · STITCH", "BACK · LAY FLAT", "FABRIC · MACRO"].map((l, i) => (
-              <div key={i} className="ph" style={{
-                aspectRatio: "1",
-                height: "auto",
-                background: i === 1 ? COLOR_MAP[product.colorKey] : "var(--cream-2)",
-              }}>
-                <div className="ph-label">{l}</div>
-              </div>
-            ))}
+            {[0, 1, 2].map((slotIdx) => {
+              const altIdx = slotIdx + 1;
+              const alt = images[altIdx];
+              const fallbackLabel = ["DETAIL · STITCH", "BACK · LAY FLAT", "FABRIC · MACRO"][slotIdx];
+              if (alt) {
+                const isActive = activeIdx === altIdx;
+                return (
+                  <button
+                    key={altIdx}
+                    onClick={() => setActiveIdx(altIdx)}
+                    className="ph"
+                    style={{
+                      aspectRatio: "1",
+                      height: "auto",
+                      background: COLOR_MAP[product.colorKey],
+                      position: "relative",
+                      overflow: "hidden",
+                      padding: 0,
+                      border: isActive ? "2px solid var(--ink)" : "1px solid var(--line)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: "radial-gradient(140% 90% at 30% 20%, rgba(255,255,255,0.4), transparent 60%)",
+                    }} />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={alt.url}
+                      alt={alt.label ?? ""}
+                      style={{
+                        position: "absolute",
+                        left: `${50 + (alt.offsetX ?? 0)}%`,
+                        top: `${50 + (alt.offsetY ?? 0)}%`,
+                        transform: `translate(-50%, -50%) scale(${alt.scale ?? 1})`,
+                        maxWidth: "92%",
+                        maxHeight: "92%",
+                        objectFit: "contain",
+                      }}
+                    />
+                    {alt.label && (
+                      <div className="ph-label" style={{
+                        background: "rgba(0,0,0,0.45)",
+                        color: "rgba(255,255,255,0.95)",
+                      }}>
+                        {alt.label.toUpperCase()}
+                      </div>
+                    )}
+                  </button>
+                );
+              }
+              return (
+                <div key={slotIdx} className="ph" style={{
+                  aspectRatio: "1",
+                  height: "auto",
+                  background: slotIdx === 1 ? COLOR_MAP[product.colorKey] : "var(--cream-2)",
+                }}>
+                  <div className="ph-label">{fallbackLabel}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

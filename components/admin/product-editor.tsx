@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { upload } from "@vercel/blob/client";
+import type { ProductImage } from "@/lib/db/schema";
 
 type Product = {
   id: string;
@@ -15,6 +17,7 @@ type Product = {
   inStock: boolean;
   position: number;
   visualConfig: Record<string, unknown>;
+  images: ProductImage[];
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -45,6 +48,7 @@ function CardPreview({ product, scale = 1 }: { product: Product; scale?: number 
   const vc = product.visualConfig ?? {};
   const silTop = typeof vc.silhouetteTop === "number" ? vc.silhouetteTop : 50;
   const color = COLOR_MAP[product.colorKey];
+  const hero = product.images?.[0];
 
   return (
     <div style={{
@@ -63,18 +67,34 @@ function CardPreview({ product, scale = 1 }: { product: Product; scale?: number 
         position: "absolute", inset: 0,
         background: "radial-gradient(120% 80% at 30% 25%, rgba(255,255,255,0.45), transparent 60%)",
       }} />
-      {/* silhouette at adjustable Y position */}
-      <div style={{
-        position: "absolute",
-        left: "50%",
-        top: `${silTop}%`,
-        transform: "translate(-50%, -50%)",
-        width: "55%",
-        aspectRatio: "0.7",
-        background: "rgba(0,0,0,0.06)",
-        clipPath: getSilhouettePath(product),
-      }} />
-      {/* price docked */}
+      {hero ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={hero.url}
+          alt=""
+          style={{
+            position: "absolute",
+            left: `${50 + (hero.offsetX ?? 0)}%`,
+            top: `${50 + (hero.offsetY ?? 0)}%`,
+            transform: `translate(-50%, -50%) scale(${hero.scale ?? 1})`,
+            maxWidth: "92%",
+            maxHeight: "92%",
+            objectFit: "contain",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          top: `${silTop}%`,
+          transform: "translate(-50%, -50%)",
+          width: "55%",
+          aspectRatio: "0.7",
+          background: "rgba(0,0,0,0.06)",
+          clipPath: getSilhouettePath(product),
+        }} />
+      )}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
         padding: `${14 * scale}px ${22 * scale}px`,
@@ -88,7 +108,6 @@ function CardPreview({ product, scale = 1 }: { product: Product; scale?: number 
         <span>{product.category.toUpperCase()}</span>
         <span style={{ fontFamily: "var(--serif)", fontSize: 18 * scale }}>${product.price}</span>
       </div>
-      {/* reveal panel — always visible in admin */}
       <div style={{
         position: "absolute",
         bottom: 0, left: 0, right: 0,
@@ -123,6 +142,254 @@ function CardPreview({ product, scale = 1 }: { product: Product; scale?: number 
   );
 }
 
+function ImageManager({
+  images,
+  onChange,
+  productId,
+  cardColor,
+}: {
+  images: ProductImage[];
+  onChange: (images: ProductImage[]) => void;
+  productId: string;
+  cardColor: string;
+}) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [bgWorking, setBgWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const sel = images[selectedIdx];
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const blob = await upload(`products/${productId}/${Date.now()}.${ext}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/admin/upload",
+      });
+      const newImg: ProductImage = {
+        id: crypto.randomUUID(),
+        url: blob.url,
+        originalUrl: blob.url,
+        role: images.length === 0 ? "hero" : "alt",
+        scale: 1,
+        offsetX: 0,
+        offsetY: 0,
+        bgRemoved: false,
+      };
+      onChange([...images, newImg]);
+      setSelectedIdx(images.length);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleBackgroundRemove = async () => {
+    if (!sel) return;
+    setError(null);
+    setBgWorking(true);
+    try {
+      const { removeBackground } = await import("@imgly/background-removal");
+      // run BG removal against the original to allow re-running cleanly
+      const cutoutBlob = await removeBackground(sel.originalUrl);
+      const file = new File([cutoutBlob], "cutout.png", { type: "image/png" });
+      const blob = await upload(
+        `products/${productId}/cutout-${Date.now()}.png`,
+        file,
+        { access: "public", handleUploadUrl: "/api/admin/upload" }
+      );
+      updateField("url", blob.url);
+      updateField("bgRemoved", true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Background removal failed");
+    } finally {
+      setBgWorking(false);
+    }
+  };
+
+  const useOriginal = () => {
+    if (!sel) return;
+    const updated = [...images];
+    updated[selectedIdx] = { ...sel, url: sel.originalUrl, bgRemoved: false };
+    onChange(updated);
+  };
+
+  function updateField<K extends keyof ProductImage>(key: K, value: ProductImage[K]) {
+    if (!sel) return;
+    const updated = [...images];
+    updated[selectedIdx] = { ...sel, [key]: value };
+    onChange(updated);
+  }
+
+  const deleteImage = () => {
+    if (!sel) return;
+    const updated = images.filter((_, i) => i !== selectedIdx);
+    onChange(updated);
+    setSelectedIdx(Math.max(0, selectedIdx - 1));
+  };
+
+  const moveImage = (dir: -1 | 1) => {
+    const newIdx = selectedIdx + dir;
+    if (newIdx < 0 || newIdx >= images.length) return;
+    const updated = [...images];
+    [updated[selectedIdx], updated[newIdx]] = [updated[newIdx], updated[selectedIdx]];
+    onChange(updated);
+    setSelectedIdx(newIdx);
+  };
+
+  return (
+    <>
+      <Label>VIEWS — FIRST IS HERO</Label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 12 }}>
+        {images.map((img, i) => (
+          <button
+            key={img.id}
+            onClick={() => setSelectedIdx(i)}
+            style={{
+              aspectRatio: "1",
+              background: `${cardColor} url(${img.url}) center / contain no-repeat`,
+              border: i === selectedIdx ? "2px solid var(--cream)" : "1px solid rgba(244,239,230,0.14)",
+              cursor: "pointer",
+              position: "relative",
+              padding: 0,
+            }}
+            title={img.role ?? "alt"}
+          >
+            {i === 0 && (
+              <span
+                className="mono"
+                style={{
+                  position: "absolute",
+                  bottom: 2,
+                  left: 2,
+                  fontSize: 7,
+                  color: "var(--cream)",
+                  background: "rgba(0,0,0,0.6)",
+                  padding: "1px 4px",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                HERO
+              </span>
+            )}
+          </button>
+        ))}
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{
+            aspectRatio: "1",
+            background: "rgba(244,239,230,0.06)",
+            border: "1px dashed rgba(244,239,230,0.3)",
+            color: "var(--muted)",
+            cursor: uploading ? "wait" : "pointer",
+            fontFamily: "var(--mono)",
+            fontSize: 9,
+            letterSpacing: "0.14em",
+          }}
+        >
+          {uploading ? "..." : "+ ADD"}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/avif"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      {error && (
+        <div className="mono" style={{ fontSize: 9, color: "#C17060", marginBottom: 12, letterSpacing: "0.14em" }}>
+          {error.toUpperCase()}
+        </div>
+      )}
+
+      {sel && (
+        <div style={{ background: "rgba(244,239,230,0.04)", padding: 12, marginBottom: 16 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            <button onClick={() => moveImage(-1)} disabled={selectedIdx === 0} style={miniBtn}>← MOVE</button>
+            <button onClick={() => moveImage(1)} disabled={selectedIdx === images.length - 1} style={miniBtn}>MOVE →</button>
+            <button onClick={deleteImage} style={{ ...miniBtn, color: "#C17060", borderColor: "rgba(193,112,96,0.4)" }}>DELETE</button>
+          </div>
+
+          <Label>ROLE</Label>
+          <select
+            value={sel.role ?? "alt"}
+            onChange={(e) => updateField("role", e.target.value as ProductImage["role"])}
+            style={{ ...adminInput, height: 32 }}
+          >
+            <option value="hero">Hero</option>
+            <option value="detail">Detail</option>
+            <option value="back">Back</option>
+            <option value="fabric">Fabric</option>
+            <option value="alt">Alt</option>
+          </select>
+
+          <Label>CAPTION</Label>
+          <input
+            value={sel.label ?? ""}
+            onChange={(e) => updateField("label", e.target.value)}
+            style={{ ...adminInput, height: 32 }}
+            placeholder="e.g. Detail · Stitch"
+          />
+
+          <Label>SCALE — {(sel.scale ?? 1).toFixed(2)}</Label>
+          <input
+            type="range"
+            min={0.3}
+            max={2}
+            step={0.05}
+            value={sel.scale ?? 1}
+            onChange={(e) => updateField("scale", parseFloat(e.target.value))}
+            style={{ width: "100%", marginBottom: 12, accentColor: "var(--cream)" }}
+          />
+
+          <Label>OFFSET Y — {sel.offsetY ?? 0}</Label>
+          <input
+            type="range"
+            min={-50}
+            max={50}
+            step={1}
+            value={sel.offsetY ?? 0}
+            onChange={(e) => updateField("offsetY", parseInt(e.target.value))}
+            style={{ width: "100%", marginBottom: 12, accentColor: "var(--cream)" }}
+          />
+
+          <Label>OFFSET X — {sel.offsetX ?? 0}</Label>
+          <input
+            type="range"
+            min={-50}
+            max={50}
+            step={1}
+            value={sel.offsetX ?? 0}
+            onChange={(e) => updateField("offsetX", parseInt(e.target.value))}
+            style={{ width: "100%", marginBottom: 12, accentColor: "var(--cream)" }}
+          />
+
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={handleBackgroundRemove} disabled={bgWorking} style={{ ...miniBtn, flex: 1, height: 32 }}>
+              {bgWorking ? "REMOVING…" : sel.bgRemoved ? "RE-RUN BG REMOVE" : "REMOVE BG"}
+            </button>
+            {sel.bgRemoved && (
+              <button onClick={useOriginal} style={{ ...miniBtn, flex: 1, height: 32 }}>USE ORIGINAL</button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function AdminProductEditor() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Product | null>(null);
@@ -135,10 +402,14 @@ export default function AdminProductEditor() {
     fetch("/api/admin/products")
       .then((r) => r.json())
       .then((data) => {
-        setProducts(data);
-        if (data.length) {
-          setSelected(data[0]);
-          setDraft(data[0]);
+        const normalized: Product[] = (data ?? []).map((p: Product) => ({
+          ...p,
+          images: Array.isArray(p.images) ? p.images : [],
+        }));
+        setProducts(normalized);
+        if (normalized.length) {
+          setSelected(normalized[0]);
+          setDraft(normalized[0]);
         }
       });
   }, []);
@@ -169,14 +440,15 @@ export default function AdminProductEditor() {
       body: JSON.stringify({ id: selected.id, ...draft }),
     });
     const updated = await res.json();
-    setProducts((ps) => ps.map((p) => (p.id === updated.id ? updated : p)));
-    setSelected(updated);
+    const normalized: Product = { ...updated, images: Array.isArray(updated.images) ? updated.images : [] };
+    setProducts((ps) => ps.map((p) => (p.id === normalized.id ? normalized : p)));
+    setSelected(normalized);
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const live = selected ? { ...selected, ...draft } as Product : null;
+  const live = selected ? ({ ...selected, ...draft, images: draft.images ?? selected.images ?? [] } as Product) : null;
   const filtered = filter === "All" ? products : products.filter((p) => p.category === filter);
 
   return (
@@ -187,7 +459,6 @@ export default function AdminProductEditor() {
       background: "var(--ink)",
       color: "var(--cream)",
     }}>
-      {/* Admin nav */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -237,14 +508,12 @@ export default function AdminProductEditor() {
       </div>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        {/* LEFT: product list */}
         <div style={{
           width: 240,
           borderRight: "1px solid rgba(244,239,230,0.12)",
           overflow: "auto",
           flexShrink: 0,
         }}>
-          {/* Filter */}
           <div style={{
             padding: "12px 16px",
             borderBottom: "1px solid rgba(244,239,230,0.08)",
@@ -285,7 +554,9 @@ export default function AdminProductEditor() {
               <div style={{
                 width: 32,
                 height: 40,
-                background: COLOR_MAP[p.colorKey],
+                background: p.images?.[0]?.url
+                  ? `${COLOR_MAP[p.colorKey]} url(${p.images[0].url}) center / contain no-repeat`
+                  : COLOR_MAP[p.colorKey],
                 flexShrink: 0,
               }} />
               <div>
@@ -303,14 +574,13 @@ export default function AdminProductEditor() {
                   marginTop: 3,
                   letterSpacing: "0.12em",
                 }}>
-                  {p.category} · ${p.price}
+                  {p.category} · ${p.price} · {p.images?.length ?? 0} view{(p.images?.length ?? 0) === 1 ? "" : "s"}
                 </div>
               </div>
             </button>
           ))}
         </div>
 
-        {/* CENTER: live preview */}
         <div style={{
           flex: 1,
           overflow: "auto",
@@ -329,10 +599,9 @@ export default function AdminProductEditor() {
                 marginBottom: 20,
                 letterSpacing: "0.2em",
               }}>
-                LIVE PREVIEW · CLICK CARD BELOW TO EDIT
+                LIVE PREVIEW · CARD ON LEFT/RIGHT JUMPS TO NEIGHBOR
               </div>
 
-              {/* Grid preview showing 3 cards */}
               <div style={{ display: "flex", gap: 16 }}>
                 {[0.6, 1, 0.6].map((s, i) => (
                   <div
@@ -345,10 +614,31 @@ export default function AdminProductEditor() {
                     }}
                     style={{ cursor: i !== 1 ? "pointer" : "default", opacity: i !== 1 ? 0.5 : 1 }}
                   >
-                    <CardPreview product={i === 1 ? live : (products[products.indexOf(selected!) + i - 1] ?? live)} scale={i === 1 ? 1 : 0.7} />
+                    <CardPreview
+                      product={i === 1 ? live : (products[products.indexOf(selected!) + i - 1] ?? live)}
+                      scale={i === 1 ? 1 : 0.7}
+                    />
                   </div>
                 ))}
               </div>
+
+              {/* Detail-page thumb strip showing all views */}
+              {(live.images?.length ?? 0) > 1 && (
+                <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+                  {live.images.slice(0, 4).map((img) => (
+                    <div
+                      key={img.id}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        background: `${COLOR_MAP[live.colorKey]} url(${img.url}) center / contain no-repeat`,
+                        border: "1px solid rgba(244,239,230,0.16)",
+                      }}
+                      title={img.label || img.role || "alt"}
+                    />
+                  ))}
+                </div>
+              )}
 
               <div className="mono" style={{
                 marginTop: 20,
@@ -362,10 +652,9 @@ export default function AdminProductEditor() {
           )}
         </div>
 
-        {/* RIGHT: edit panel */}
         {live && (
           <div style={{
-            width: 320,
+            width: 340,
             borderLeft: "1px solid rgba(244,239,230,0.12)",
             overflow: "auto",
             padding: "20px 20px",
@@ -380,7 +669,15 @@ export default function AdminProductEditor() {
               EDIT PRODUCT
             </div>
 
-            {/* Name */}
+            <ImageManager
+              images={live.images ?? []}
+              onChange={(imgs) => updateDraft("images", imgs)}
+              productId={live.id}
+              cardColor={COLOR_MAP[live.colorKey]}
+            />
+
+            <div style={{ borderTop: "1px solid rgba(244,239,230,0.12)", marginBottom: 16 }} />
+
             <Label>NAME</Label>
             <input
               value={draft.name ?? ""}
@@ -388,7 +685,6 @@ export default function AdminProductEditor() {
               style={adminInput}
             />
 
-            {/* Price */}
             <Label>PRICE (USD)</Label>
             <input
               type="number"
@@ -398,7 +694,6 @@ export default function AdminProductEditor() {
               style={adminInput}
             />
 
-            {/* Description */}
             <Label>DESCRIPTION</Label>
             <textarea
               value={draft.description ?? ""}
@@ -407,7 +702,6 @@ export default function AdminProductEditor() {
               style={{ ...adminInput, height: "auto", resize: "vertical", padding: 10 }}
             />
 
-            {/* Color key */}
             <Label>COLOR BLOCK</Label>
             <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
               {(["white", "sky", "red", "sage"] as const).map((c) => (
@@ -424,9 +718,8 @@ export default function AdminProductEditor() {
               ))}
             </div>
 
-            {/* Silhouette vertical position */}
             <Label>
-              SILHOUETTE POSITION — {typeof draft.visualConfig?.silhouetteTop === "number" ? draft.visualConfig.silhouetteTop : 50}%
+              SILHOUETTE POSITION — {typeof draft.visualConfig?.silhouetteTop === "number" ? draft.visualConfig.silhouetteTop : 50}% (used when no image)
             </Label>
             <input
               type="range"
@@ -438,13 +731,8 @@ export default function AdminProductEditor() {
               style={{ width: "100%", marginBottom: 20, accentColor: "var(--cream)" }}
             />
 
-            {/* Divider */}
-            <div style={{
-              borderTop: "1px solid rgba(244,239,230,0.12)",
-              marginBottom: 16,
-            }} />
+            <div style={{ borderTop: "1px solid rgba(244,239,230,0.12)", marginBottom: 16 }} />
 
-            {/* Category */}
             <Label>CATEGORY</Label>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
               {["Women", "Men", "Kids"].map((cat) => (
@@ -464,7 +752,6 @@ export default function AdminProductEditor() {
               ))}
             </div>
 
-            {/* Tone label */}
             <Label>COLOR TONE LABEL</Label>
             <input
               value={draft.tone ?? ""}
@@ -473,7 +760,6 @@ export default function AdminProductEditor() {
               placeholder="e.g. Crisp White"
             />
 
-            {/* In stock */}
             <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -503,7 +789,6 @@ export default function AdminProductEditor() {
               </button>
             </div>
 
-            {/* Save button */}
             <button onClick={save} disabled={saving} style={{
               width: "100%",
               height: 46,
@@ -549,4 +834,16 @@ const adminInput: React.CSSProperties = {
   fontSize: 13,
   outline: "none",
   marginBottom: 16,
+};
+
+const miniBtn: React.CSSProperties = {
+  flex: 1,
+  height: 26,
+  background: "rgba(244,239,230,0.06)",
+  border: "1px solid rgba(244,239,230,0.18)",
+  color: "var(--cream)",
+  fontFamily: "var(--mono)",
+  fontSize: 9,
+  letterSpacing: "0.14em",
+  cursor: "pointer",
 };

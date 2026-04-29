@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "./cart-context";
+import type { ProductImage } from "@/lib/db/schema";
 
 export type Product = {
   id: string;
@@ -14,6 +15,7 @@ export type Product = {
   tone: string;
   description: string;
   visualConfig?: Record<string, unknown>;
+  images?: ProductImage[];
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -88,17 +90,35 @@ export default function ProductCard({ product, big = false, scrollRoot }: Props)
             position: "absolute", inset: 0,
             background: "radial-gradient(120% 80% at 30% 25%, rgba(255,255,255,0.45), transparent 60%)",
           }} />
-          {/* faint silhouette */}
-          <div style={{
-            position: "absolute",
-            left: "50%",
-            top: typeof vc.silhouetteTop === "number" ? `${vc.silhouetteTop}%` : "50%",
-            transform: "translate(-50%, -50%)",
-            width: "55%",
-            aspectRatio: "0.7",
-            background: "rgba(0,0,0,0.06)",
-            clipPath: getSilhouettePath(product),
-          }} />
+          {/* hero image, or faint silhouette fallback */}
+          {product.images?.[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.images[0].url}
+              alt={product.images[0].label ?? product.name}
+              style={{
+                position: "absolute",
+                left: `${50 + (product.images[0].offsetX ?? 0)}%`,
+                top: `${50 + (product.images[0].offsetY ?? 0)}%`,
+                transform: `translate(-50%, -50%) scale(${product.images[0].scale ?? 1})`,
+                maxWidth: "92%",
+                maxHeight: "92%",
+                objectFit: "contain",
+                pointerEvents: "none",
+              }}
+            />
+          ) : (
+            <div style={{
+              position: "absolute",
+              left: "50%",
+              top: typeof vc.silhouetteTop === "number" ? `${vc.silhouetteTop}%` : "50%",
+              transform: "translate(-50%, -50%)",
+              width: "55%",
+              aspectRatio: "0.7",
+              background: "rgba(0,0,0,0.06)",
+              clipPath: getSilhouettePath(product),
+            }} />
+          )}
           <div className="mono" style={{
             position: "absolute", bottom: 14, left: 18,
             fontSize: 9, letterSpacing: "0.14em",

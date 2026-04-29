@@ -3,6 +3,19 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
+// ─── Shared types ─────────────────────────────────────────────────────────────
+export type ProductImage = {
+  id: string;
+  url: string;
+  originalUrl: string;
+  role?: "hero" | "detail" | "back" | "fabric" | "alt";
+  label?: string;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  bgRemoved: boolean;
+};
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 export const categoryEnum = pgEnum("category", ["Women", "Men", "Kids"]);
 export const colorEnum = pgEnum("color_key", ["white", "sky", "red", "sage"]);
@@ -22,6 +35,8 @@ export const products = pgTable("products", {
   description: text("description").notNull(),
   // visual editor overrides stored as JSON
   visualConfig: jsonb("visual_config").default({}),
+  // ordered list of product views (hero is index 0). See ProductImage type.
+  images: jsonb("images").$type<ProductImage[]>().default([]).notNull(),
   inStock: boolean("in_stock").default(true).notNull(),
   position: integer("position").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

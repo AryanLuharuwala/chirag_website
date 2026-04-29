@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const allowed = ["name", "description", "price", "colorKey", "tone", "inStock", "position", "visualConfig"];
+  const allowed = ["name", "description", "price", "colorKey", "tone", "inStock", "position", "visualConfig", "images"];
   const filtered = Object.fromEntries(
     Object.entries(updates).filter(([k]) => allowed.includes(k))
   );
