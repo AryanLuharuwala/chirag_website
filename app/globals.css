@@ -124,6 +124,17 @@ body {
 .marquee-rtl { animation: marquee-rtl linear infinite; }
 .marquee-ltr { animation: marquee-ltr linear infinite; }
 
+/* View transitions — smoother default for product hero morph */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+::view-transition-group(*) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+
 /* Skeleton shimmer */
 @keyframes shimmer {
   0% { background-position: 200% 0; }

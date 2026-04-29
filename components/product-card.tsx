@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import Image from "next/image";
 import { useCart } from "./cart-context";
 import type { ProductImage } from "@/lib/db/schema";
@@ -101,6 +101,7 @@ export default function ProductCard({ product, big = false, scrollRoot }: Props)
               width: "92%",
               height: "92%",
               pointerEvents: "none",
+              viewTransitionName: `product-hero-${product.slug}`,
             }}>
               <Image
                 src={product.images[0].url}

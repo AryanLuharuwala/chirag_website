@@ -80,6 +80,8 @@ export default function ProductDetailClient({ product }: { product: DBProduct })
                 width: "92%",
                 height: "92%",
                 pointerEvents: "none",
+                viewTransitionName:
+                  activeIdx === 0 ? `product-hero-${product.slug}` : undefined,
               }}>
                 <Image
                   src={main.url}

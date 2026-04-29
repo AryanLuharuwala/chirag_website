@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ViewTransitions } from "next-view-transitions";
 import { CartProvider } from "@/components/cart-context";
 import CartDrawer from "@/components/cart-drawer";
 
@@ -33,16 +34,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${geist.variable} ${geistMono.variable}`}
-    >
-      <body>
-        <CartProvider>
-          {children}
-          <CartDrawer />
-        </CartProvider>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html
+        lang="en"
+        className={`${fraunces.variable} ${geist.variable} ${geistMono.variable}`}
+      >
+        <body>
+          <CartProvider>
+            {children}
+            <CartDrawer />
+          </CartProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }
